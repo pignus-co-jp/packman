@@ -34,6 +34,7 @@ class DriverOption():
             prefs["download.default_directory"] = self.download_dir
 
         options.add_experimental_option("prefs", prefs)
+        return options
 
     def get_service(self):
         if self.chrome_log_filepath:
