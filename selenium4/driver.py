@@ -14,7 +14,7 @@ from . import driveroption
 from .. import log
 
 
-def create_driver(driver_option: Optional[driveroption.DriverOption] = None) -> Optional[webdriver.Chrome]:
+def create(driver_option: Optional[driveroption.DriverOption] = None) -> Optional[webdriver.Chrome]:
     if driver_option is None:
         driver_option = driveroption.DriverOption()
     try:
@@ -24,9 +24,9 @@ def create_driver(driver_option: Optional[driveroption.DriverOption] = None) -> 
     return None
 
 
-def destroy(driver: webdriver.Chrome) -> bool:
+def destroy(chromedriver: webdriver.Chrome) -> bool:
     try:
-        driver.quit()
+        chromedriver.quit()
     except Exception as ex:
         log.e(ex)
         return False
