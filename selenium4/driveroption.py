@@ -36,7 +36,7 @@ class DriverOption():
         options.add_experimental_option("prefs", prefs)
         return options
 
-    def get_service(self):
+    def get_service(self) -> Service:
         if self.chrome_log_filepath:
             return Service(log_output=self.chrome_log_filepath)
         return None

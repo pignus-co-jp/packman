@@ -14,7 +14,9 @@ from . import driveroption
 from .. import log
 
 
-def create_driver(driver_option: driveroption.DriverOption = driveroption.DriverOption()) -> Optional[webdriver.Chrome]:
+def create_driver(driver_option: Optional[driveroption.DriverOption] = None) -> Optional[webdriver.Chrome]:
+    if driver_option is None:
+        driver_option = driveroption.DriverOption()
     try:
         return webdriver.Chrome(service=driver_option.get_service(), options=driver_option.get_options())
     except Exception as ex:
