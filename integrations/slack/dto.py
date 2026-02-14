@@ -43,3 +43,16 @@ class Conversation(BaseModel):
         None,
         description="メッセージ本文（Bot / ユーザー / システム投稿を含む）"
     )
+
+class Channel(BaseModel):
+    """
+    Slack API () のチャンネル情報を表す DTO。
+    """
+    id: str = Field(
+        ...,
+        description="Slack チャンネル ID（例: U123ABC）"
+    )
+    name: Optional[str] = Field(
+        None,
+        description="Slack のチャンネル名"
+    )

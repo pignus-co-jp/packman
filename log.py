@@ -1,6 +1,19 @@
 # -*- coding: utf-8 -*-
 
+import os
 import logging
+from typing import List
+
+'''
+| レベル名 | 数値 | 備考 |
+|---------|------|------|
+| CRITICAL | 50 | 公式 |
+| ERROR | 40 | 公式 |
+| WARNING | 30 | 公式 |
+| INFO | 20 | 公式 |
+| DEBUG | 10 | 公式 |
+| NOTSET | 0 | 公式 |
+'''
 
 DEFAULT_LOG_FORMAT = "%(asctime)s [%(levelname)s] %(message)s"
 FULL_LOG_FORMAT = "%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d <%(funcName)s> %(message)s"
@@ -10,77 +23,95 @@ ERROR_LOG_FORMAT = "%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d %(messag
 # -------------------------
 # ロガー初期化
 # -------------------------
-logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)  # 全レベルを通す
+__logger = logging.getLogger(__name__)
+__logger.setLevel(logging.DEBUG)  # ロガー自体は常にDEBUGレベルに設定し、ハンドラーでフィルタリング
+
+stream_handlers: List[logging.StreamHandler] = []
+file_handlers: List[logging.FileHandler] = []
 
 
-# -------------------------
-# INFO ハンドラ
-# -------------------------
-__info_handler = logging.StreamHandler()
-__info_handler.setLevel(logging.INFO)
-__info_handler.addFilter(lambda record: record.levelno == logging.INFO)
-__info_handler.setFormatter(logging.Formatter(DEFAULT_LOG_FORMAT))
-logger.addHandler(__info_handler)
+def _set_handler(handler: logging.Handler, level: int) -> logging.Handler:
+    """ハンドラーにレベル、フィルター、フォーマッターを設定"""
+    handler.setLevel(level)
+    handler.addFilter(lambda record: record.levelno == level)
+
+    # レベルに応じたフォーマット選択
+    if level == logging.INFO:
+        formatter = logging.Formatter(DEFAULT_LOG_FORMAT)
+    elif level in (logging.WARNING, logging.ERROR):
+        formatter = logging.Formatter(ERROR_LOG_FORMAT)
+    else:
+        formatter = logging.Formatter(FULL_LOG_FORMAT)
+
+    handler.setFormatter(formatter)
+    __logger.addHandler(handler)
+    return handler
 
 
-# -------------------------
-# WARNING ハンドラ
-# -------------------------
-__warn_handler = logging.StreamHandler()
-__warn_handler.setLevel(logging.WARNING)
-__warn_handler.addFilter(lambda record: record.levelno == logging.WARNING)
-__warn_handler.setFormatter(logging.Formatter(DEFAULT_LOG_FORMAT))
-logger.addHandler(__warn_handler)
+# 初期ハンドラー設定
+for level in (logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR):
+    stream_handlers.append(_set_handler(logging.StreamHandler(), level))
 
 
-# -------------------------
-# ERROR ハンドラ
-# -------------------------
-__error_handler = logging.StreamHandler()
-__error_handler.setLevel(logging.ERROR)
-__error_handler.addFilter(lambda record: record.levelno == logging.ERROR)
-__error_handler.setFormatter(logging.Formatter(ERROR_LOG_FORMAT))
-logger.addHandler(__error_handler)
+def start_debug_mode():
+    """Debugモード切り替え（全ハンドラーを有効化）"""
+    for handler in stream_handlers + file_handlers:
+        handler.setLevel(handler.level)  # 既存のレベルを維持
 
 
-# -------------------------
-# DEBUG ハンドラ（デフォルトでは無効）
-# -------------------------
-__debug_handler = logging.StreamHandler()
-__debug_handler.setLevel(logging.DEBUG)
-__debug_handler.addFilter(lambda record: record.levelno == logging.DEBUG)
-__debug_handler.setFormatter(logging.Formatter(DEFAULT_LOG_FORMAT))
-# startDebugMode() で addHandler する
+def start_default_mode():
+    """通常モード切り替え（DEBUGハンドラーを無効化）"""
+    for handler in stream_handlers + file_handlers:
+        if handler.level == logging.DEBUG:
+            handler.setLevel(logging.CRITICAL + 1)  # 実質無効化
 
 
-# -------------------------
-# Debug モード切り替え
-# -------------------------
-def startDebugMode():
-    """DEBUG モードでは FULL_LOG_FORMAT を使う"""
-    __debug_handler.setFormatter(logging.Formatter(FULL_LOG_FORMAT))
-    logger.addHandler(__debug_handler)
+def enable_file_output(
+    filepath: str,
+    level: int = logging.INFO,
+    encoding: str = "utf-8"
+) -> logging.FileHandler:
+    """ファイルハンドラーを追加"""
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    handler = logging.FileHandler(filepath, encoding=encoding)
+    return _set_handler(handler, level)
 
 
-# -------------------------
-# ラッパ関数
-# -------------------------
+def set_logfile_all(filepath: str = os.path.join("logs", "packman.log")):
+    """全レベルのファイル出力を設定"""
+    for level in (logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR):
+        file_handlers.append(enable_file_output(filepath, level))
+
+
 def d(*args):
+    """DEBUGログ出力"""
     msg = " ".join(str(a) for a in args)
-    logger.debug(msg, stacklevel=2)
-
-
-def w(*args):
-    msg = " ".join(str(a) for a in args)
-    logger.warning(msg, stacklevel=2)
+    __logger.debug(msg, stacklevel=2)
 
 
 def i(*args):
+    """INFOログ出力"""
     msg = " ".join(str(a) for a in args)
-    logger.info(msg, stacklevel=2)
+    __logger.info(msg, stacklevel=2)
+
+
+def w(*args):
+    """WARNINGログ出力"""
+    msg = " ".join(str(a) for a in args)
+    __logger.warning(msg, stacklevel=2)
 
 
 def e(*args):
+    """ERRORログ出力"""
     msg = " ".join(str(a) for a in args)
-    logger.error(msg, stacklevel=2)
+    __logger.error(msg, stacklevel=2)
+
+
+def c(*args):
+    """CRITICALログ出力（追加）"""
+    msg = " ".join(str(a) for a in args)
+    __logger.critical(msg, stacklevel=2)
+
+
+# デフォルトモードで開始
+start_default_mode()

@@ -1,16 +1,14 @@
 # -*- coding: utf-8 -*-
 
 from typing import List, Optional, Dict, Any
-import logging
+
 
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
 from . import dto
 
-
-# ロガーの設定
-logger = logging.getLogger(__name__)
+from ... import log
 
 
 class SlackError(Exception):
@@ -66,7 +64,7 @@ class Slack:
             operation: 実行していた操作名
         """
         error_msg = e.response.get("error", "Unknown error")
-        logger.error(f"{operation} failed: {error_msg}")
+        log.e(f"{operation} failed: {error_msg}")
         raise SlackAPIError(
             f"{operation} failed: {error_msg}",
             error_code=error_msg
@@ -106,7 +104,7 @@ class Slack:
             return []
 
         if not response.get("ok"):
-            logger.warning("users_list returned ok=False")
+            log.w("users_list returned ok=False")
             return []
 
         users: List[dto.User] = []
@@ -237,7 +235,7 @@ class Slack:
             return None
 
         if not response.get("ok"):
-            logger.warning("chat_postMessage returned ok=False")
+            log.w("chat_postMessage returned ok=False")
             return None
 
         return response.get("ts")
@@ -376,7 +374,7 @@ class Slack:
             return []
 
         if not response.get("ok"):
-            logger.warning("conversations_history returned ok=False")
+            log.w("conversations_history returned ok=False")
             return []
 
         messages = response.get("messages", [])
@@ -541,7 +539,7 @@ class Slack:
         self,
         exclude_archived: bool = True,
         types: str = "public_channel",
-    ) -> List[Dict[str, Any]]:
+    ) -> List[dto.Channel]:
         """
         チャンネル一覧を取得
 
@@ -564,7 +562,17 @@ class Slack:
         if not response.get("ok"):
             return []
 
-        return response.get("channels", [])
+        channels: List[dto.Channel] = []
+        xs = response.get("channels", [])
+        for x in xs:
+            channels.append(
+                dto.Channel(
+                    id=x.get("id", ""),
+                    name=x.get("name", None)
+                )
+            )
+
+        return channels
 
     def get_channel_info(self, channel: str) -> Optional[Dict[str, Any]]:
         """

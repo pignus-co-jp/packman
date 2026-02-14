@@ -3,10 +3,7 @@ from email.message import EmailMessage
 from email.utils import formataddr, parseaddr
 import mimetypes
 from pathlib import Path
-import logging
-
-logger = logging.getLogger(__name__)
-
+from ... import log
 
 class EmailBuilderError(Exception):
     """メール構築時のエラー"""
@@ -200,13 +197,13 @@ class EmailMessageBuilder:
             self（メソッドチェーン用）
         """
         if not body:
-            logger.warning("Empty text body provided")
+            log.w("Empty text body provided")
 
         if not self._has_text_content:
             self._msg.set_content(body, subtype="plain", charset="utf-8")
             self._has_text_content = True
         else:
-            logger.warning("Text content already set, replacing...")
+            log.w("Text content already set, replacing...")
             # 既存のテキストコンテンツを置き換え
             for part in self._msg.iter_parts():
                 if part.get_content_type() == "text/plain":
@@ -228,10 +225,10 @@ class EmailMessageBuilder:
             self（メソッドチェーン用）
         """
         if not html_body:
-            logger.warning("Empty HTML body provided")
+            log.w("Empty HTML body provided")
 
         if not self._has_text_content:
-            logger.warning(
+            log.w(
                 "HTML added without plain text. Consider adding text() first for better compatibility.")
 
         self._msg.add_alternative(html_body, subtype="html", charset="utf-8")
@@ -280,7 +277,7 @@ class EmailMessageBuilder:
         try:
             maintype, subtype = mime_type.split("/", 1)
         except ValueError:
-            logger.warning(
+            log.w(
                 f"Invalid MIME type: {mime_type}, using application/octet-stream")
             maintype, subtype = "application", "octet-stream"
 
@@ -317,7 +314,7 @@ class EmailMessageBuilder:
         try:
             maintype, subtype = content_type.split("/", 1)
         except ValueError:
-            logger.warning(
+            log.w(
                 f"Invalid MIME type: {content_type}, using application/octet-stream")
             maintype, subtype = "application", "octet-stream"
 
@@ -407,12 +404,31 @@ class EmailMessageBuilder:
                 "At least one recipient (To, CC, or BCC) is required")
 
         if not self._subject:
-            logger.warning("Email has no subject")
+            log.w("Email has no subject")
 
         if not self._has_text_content and not self._has_html_content:
-            logger.warning("Email has no content (neither text nor HTML)")
+            log.w("Email has no content (neither text nor HTML)")
 
-    def build(self) -> EmailMessage:
+    def get_all_recipients(self) -> List[str]:
+        """
+        全ての受信者（To, CC, BCC）のリストを取得
+
+        Returns:
+            全受信者のメールアドレスリスト
+        """
+        return self._to_addrs + self._cc_addrs + self._bcc_addrs
+
+    def reset(self) -> "EmailMessageBuilder":
+        """
+        ビルダーをリセット（再利用可能に）
+
+        Returns:
+            self（メソッドチェーン用）
+        """
+        self.__init__()
+        return self
+
+    def to_EmailMessage(self) -> EmailMessage:
         """
         EmailMessageオブジェクトを構築
 
@@ -436,28 +452,3 @@ class EmailMessageBuilder:
             self._msg["Bcc"] = ", ".join(self._bcc_addrs)
 
         return self._msg
-
-    def get_all_recipients(self) -> List[str]:
-        """
-        全ての受信者（To, CC, BCC）のリストを取得
-
-        Returns:
-            全受信者のメールアドレスリスト
-        """
-        return self._to_addrs + self._cc_addrs + self._bcc_addrs
-
-    def reset(self) -> "EmailMessageBuilder":
-        """
-        ビルダーをリセット（再利用可能に）
-
-        Returns:
-            self（メソッドチェーン用）
-        """
-        self.__init__()
-        return self
-
-    # 後方互換性のためのエイリアス
-    def to_EmailMessage(self) -> EmailMessage:
-        """後方互換性のためのエイリアス（非推奨）"""
-        logger.warning("to_EmailMessage() is deprecated, use build() instead")
-        return self.build()

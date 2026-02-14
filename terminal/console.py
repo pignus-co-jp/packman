@@ -3,10 +3,8 @@ from typing import List, Optional, Dict, Any, Callable
 import sys
 import time
 import signal
-import logging
 import shlex
-
-logger = logging.getLogger(__name__)
+from .. import log
 
 
 class CLIArgsError(Exception):
@@ -269,13 +267,13 @@ class PPConsole(ABC):
         self.__commands: Dict[str, Callable] = {}
         self._setup_signal_handlers()
 
-        logger.info(
+        log.i(
             f"Console initialized (mode: {'interactive' if self.__is_console_mode else 'daemon'})")
 
     def _setup_signal_handlers(self) -> None:
         """シグナルハンドラーを設定"""
         def signal_handler(signum, frame):
-            logger.info(f"Received signal {signum}")
+            log.i(f"Received signal {signum}")
             self.destroy()
             sys.exit(0)
 
@@ -314,7 +312,7 @@ class PPConsole(ABC):
             "handler": handler,
             "description": description,
         }
-        logger.debug(f"Registered command: {name}")
+        log.d(f"Registered command: {name}")
 
     def _process_command(self, raw_input: str) -> bool:
         """
@@ -333,7 +331,7 @@ class PPConsole(ABC):
         try:
             parts = shlex.split(raw_input)
         except ValueError:
-            logger.warning(f"Failed to parse command: {raw_input}")
+            log.w(f"Failed to parse command: {raw_input}")
             return False
 
         if not parts:
@@ -347,8 +345,7 @@ class PPConsole(ABC):
                 self.__commands[command_name]["handler"](args)
                 return True
             except Exception as e:
-                logger.error(f"Command '{command_name}' failed: {e}")
-                print(f"Error: {e}")
+                log.e(f"Command '{command_name}' failed: {e}")
                 return True
 
         return False
@@ -387,35 +384,34 @@ class PPConsole(ABC):
                         self._on_input_string(raw_input)
 
                     except EOFError:
-                        logger.info("EOF received")
+                        log.i("EOF received")
                         self.destroy()
                         break
                     except Exception as ex:
-                        logger.error(f"Console error: {ex}", exc_info=True)
-                        print(f"[Error] {ex}")
+                        log.e(f"Console error: {ex}", exc_info=True)
                 else:
                     # デーモンモード
                     print(".", end="", flush=True)
                     time.sleep(5)
 
         except KeyboardInterrupt:
-            logger.info("Keyboard interrupt received")
+            log.i("Keyboard interrupt received")
             self.destroy()
         finally:
-            logger.info("Console loop ended")
+            log.i("Console loop ended")
 
     def destroy(self) -> None:
         """コンソールを終了"""
         if not self.__is_active:
             return
 
-        logger.info("Destroying console...")
+        log.i("Destroying console...")
         self.__is_active = False
 
         try:
             self._onDestroy()
         except Exception as e:
-            logger.error(f"Error during cleanup: {e}", exc_info=True)
+            log.e(f"Error during cleanup: {e}", exc_info=True)
 
     def is_active(self) -> bool:
         """アクティブ状態を取得"""
