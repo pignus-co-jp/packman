@@ -3,11 +3,6 @@
 from typing import List, Optional, Dict, Any
 
 
-# -*- coding: utf-8 -*-
-
-from typing import List, Optional, Dict, Any
-
-
 class MessageBuilder:
     """
     Slack Rich Text 対応メッセージビルダー
