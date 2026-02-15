@@ -2,12 +2,10 @@
 
 from typing import List, Optional, Dict, Any
 
-
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
 from . import dto
-
 from ... import log
 
 
@@ -24,7 +22,7 @@ class SlackAPIError(SlackError):
         self.error_code = error_code
 
 
-class Slack:
+class SlackClient:
     """
     Slack API クライアントのラッパークラス
 

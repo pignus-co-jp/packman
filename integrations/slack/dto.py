@@ -44,6 +44,7 @@ class Conversation(BaseModel):
         description="メッセージ本文（Bot / ユーザー / システム投稿を含む）"
     )
 
+
 class Channel(BaseModel):
     """
     Slack API () のチャンネル情報を表す DTO。

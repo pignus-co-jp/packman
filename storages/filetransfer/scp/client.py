@@ -36,7 +36,7 @@ class SCPOperationError(Exception):
     pass
 
 
-class Scp:
+class ScpTransferClient:
     def __init__(
         self,
         host: str,

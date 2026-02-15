@@ -4,7 +4,7 @@ from typing import List, Optional
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
-from .. import log
+from ... import log
 
 
 def find_by_class_from_driver(chromedriver: webdriver.Chrome, classname: str) -> List[WebElement]:

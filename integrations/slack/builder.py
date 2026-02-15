@@ -115,8 +115,8 @@ class MessageBuilder:
     # -------------------------
     # 複合スタイル
     # -------------------------
-    def styled_text(self, content: str, bold: bool = False, italic: bool = False, 
-                   strike: bool = False, code: bool = False) -> "MessageBuilder":
+    def styled_text(self, content: str, bold: bool = False, italic: bool = False,
+                    strike: bool = False, code: bool = False) -> "MessageBuilder":
         """複数のスタイルを同時適用"""
         if content:
             style = {}
@@ -128,14 +128,14 @@ class MessageBuilder:
                 style["strike"] = True
             if code:
                 style["code"] = True
-            
+
             element = {
                 "type": "text",
                 "text": content
             }
             if style:
                 element["style"] = style
-            
+
             self._elements.append(element)
         return self
 
@@ -158,7 +158,7 @@ class MessageBuilder:
         """Slack Blocks API形式で出力"""
         if not self._elements:
             return {"blocks": []}
-        
+
         return {
             "blocks": [
                 {
@@ -180,12 +180,12 @@ class MessageBuilder:
         """Markdown風の文字列として出力"""
         if not self._elements:
             return ""
-        
+
         parts: List[str] = []
 
         for el in self._elements:
             el_type = el.get("type", "")
-            
+
             if el_type == "text":
                 text = el.get("text", "")
                 style = el.get("style", {})
@@ -209,7 +209,8 @@ class MessageBuilder:
 
             elif el_type == "rich_text_preformatted":
                 # コードブロック
-                inner = "".join(e.get("text", "") for e in el.get("elements", []))
+                inner = "".join(e.get("text", "")
+                                for e in el.get("elements", []))
                 parts.append(f"```\n{inner}\n```")
 
         return "".join(parts)  # スペース区切りではなく連結

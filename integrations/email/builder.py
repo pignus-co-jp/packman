@@ -1,6 +1,6 @@
 from typing import List, Optional, Union
 from email.message import EmailMessage
-from email.utils import formataddr, parseaddr
+from email.utils import formataddr
 import mimetypes
 from pathlib import Path
 from ... import log
