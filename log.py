@@ -44,6 +44,10 @@ def _set_handler(handler: logging.Handler, level: int) -> logging.Handler:
         formatter = logging.Formatter(FULL_LOG_FORMAT)
 
     handler.setFormatter(formatter)
+
+    # ハンドラーに元のレベルを保存
+    handler._original_level = level
+
     __logger.addHandler(handler)
     return handler
 
@@ -56,14 +60,16 @@ for level in (logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR):
 def start_debug_mode():
     """Debugモード切り替え（全ハンドラーを有効化）"""
     for handler in stream_handlers + file_handlers:
-        handler.setLevel(handler.level)  # 既存のレベルを維持
+        handler.setLevel(handler._original_level)
 
 
 def start_default_mode():
     """通常モード切り替え（DEBUGハンドラーを無効化）"""
     for handler in stream_handlers + file_handlers:
-        if handler.level == logging.DEBUG:
+        if handler._original_level == logging.DEBUG:
             handler.setLevel(logging.CRITICAL + 1)  # 実質無効化
+        else:
+            handler.setLevel(handler._original_level)
 
 
 def enable_file_output(

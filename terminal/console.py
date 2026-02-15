@@ -227,6 +227,38 @@ class ConsoleError(Exception):
     pass
 
 
+class WorkSpace(ABC):
+    def __init__(self,
+                 id: str):
+        super().__init__()
+        self.id = id
+        self.is_destroy = False
+
+    @abstractmethod
+    def _onDestroy(self) -> None:
+        """コンソール終了時の後処理（サブクラスで実装）"""
+        pass
+
+    @abstractmethod
+    def _on_input_string(self, raw_input: str) -> Optional["WorkSpace"]:
+        pass
+
+    @abstractmethod
+    def _on_initialize(self) -> None:
+        pass
+
+    def initialize(self) -> None:
+        self._on_initialize()
+
+    def hundle_input_string(self, raw_input: str) -> Optional["WorkSpace"]:
+        return self._on_input_string(raw_input=raw_input)
+
+    def destroy(self) -> None:
+        if self.is_destroy is True:
+            return
+        self._onDestroy()
+
+
 class PPConsole(ABC):
     """
     対話型コンソールの基底クラス
@@ -262,6 +294,8 @@ class PPConsole(ABC):
         self.prompt = prompt
         self.exit_keyword = exit_keyword
 
+        self.__workspace = None
+
         self.__is_console_mode = self.argv.has_flag(console_flag)
         self.__is_active = True
         self.__commands: Dict[str, Callable] = {}
@@ -280,7 +314,6 @@ class PPConsole(ABC):
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
 
-    @abstractmethod
     def _on_input_string(self, raw_input: str) -> None:
         """
         入力文字列を処理する（サブクラスで実装）
@@ -295,7 +328,8 @@ class PPConsole(ABC):
         """コンソール終了時の後処理（サブクラスで実装）"""
         pass
 
-    def _on_startup(self) -> None:
+    @abstractmethod
+    def _on_startup(self) -> Optional[WorkSpace]:
         """起動時の処理（オプション）"""
         pass
 
@@ -364,7 +398,11 @@ class PPConsole(ABC):
             "Exit the console"
         )
 
-        self._on_startup()
+        self.__workspace = self._on_startup()
+        try:
+            self.__workspace.initialize()
+        except Exception as ex:
+            log.e(ex)
 
         try:
             while self.__is_active:
@@ -381,7 +419,19 @@ class PPConsole(ABC):
                             continue
 
                         # カスタム処理
-                        self._on_input_string(raw_input)
+                        if self.__workspace:
+                            ws = self.__workspace.hundle_input_string(
+                                raw_input=raw_input)
+                            if ws:
+                                if ws.id is not self.__workspace.id:
+                                    self.__workspace.destroy()
+                                    self.__workspace = ws
+                                    try:
+                                        self.__workspace.initialize()
+                                    except Exception as ex:
+                                        log.e(ex)
+                        else:
+                            self._on_input_string(raw_input)
 
                     except EOFError:
                         log.i("EOF received")
@@ -407,6 +457,12 @@ class PPConsole(ABC):
 
         log.i("Destroying console...")
         self.__is_active = False
+
+        try:
+            if self.__workspace:
+                self.__workspace.destroy()
+        except Exception as ex:
+            log.e(ex)
 
         try:
             self._onDestroy()

@@ -6,7 +6,6 @@ import shlex
 from contextlib import contextmanager
 from . import dto
 
-
 class SCPCurrentDirectory:
     def __init__(self, start: str = "/"):
         self._cwd = PurePosixPath(start)
@@ -82,7 +81,12 @@ class ScpTransferClient:
             }
 
             if self.key_path:
-                connect_kwargs["key_filename"] = self.key_path
+                # connect_kwargs["key_filename"] = self.key_path
+                pkey = paramiko.RSAKey.from_private_key_file(
+                    self.key_path,
+                    password=self.password
+                )
+                connect_kwargs["pkey"] = pkey
             else:
                 connect_kwargs["password"] = self.password
 
