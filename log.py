@@ -91,32 +91,47 @@ def set_logfile_all(filepath: str = os.path.join("logs", "packman.log")):
 
 def d(*args):
     """DEBUGログ出力"""
-    msg = " ".join(str(a) for a in args)
-    __logger.debug(msg, stacklevel=2)
+    try:
+        msg = " ".join(str(a) for a in args)
+        __logger.debug(msg, stacklevel=2)
+    except Exception as ex:
+        print(ex)
 
 
 def i(*args):
     """INFOログ出力"""
-    msg = " ".join(str(a) for a in args)
-    __logger.info(msg, stacklevel=2)
+    try:
+        msg = " ".join(str(a) for a in args)
+        __logger.info(msg, stacklevel=2)
+    except Exception as ex:
+        print(ex)
 
 
 def w(*args):
     """WARNINGログ出力"""
-    msg = " ".join(str(a) for a in args)
-    __logger.warning(msg, stacklevel=2)
+    try:
+        msg = " ".join(str(a) for a in args)
+        __logger.warning(msg, stacklevel=2)
+    except Exception as ex:
+        print(ex)
 
 
 def e(*args):
     """ERRORログ出力"""
-    msg = " ".join(str(a) for a in args)
-    __logger.error(msg, stacklevel=2)
+    try:
+        msg = " ".join(str(a) for a in args)
+        __logger.error(msg, stacklevel=2)
+    except Exception as ex:
+        print(ex)
 
 
 def c(*args):
     """CRITICALログ出力（追加）"""
-    msg = " ".join(str(a) for a in args)
-    __logger.critical(msg, stacklevel=2)
+    try:
+        msg = " ".join(str(a) for a in args)
+        __logger.critical(msg, stacklevel=2)
+    except Exception as ex:
+        print(ex)
 
 
 # デフォルトモードで開始
