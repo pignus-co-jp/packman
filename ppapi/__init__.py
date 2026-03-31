@@ -70,14 +70,14 @@ class PPapiResponse(dto.response.Response):
     license: str = Field(
         "Copyright 2026 Pignus. All rights reserved.", description="ライセンス")
 
-    class Config:
-        schema_extra = {
-            "example": {
-                "result": "success",
-                "version": "1.0",
-                "license": "Copyright 2026 Pignus. All rights reserved."
-            }
-        }
+    # class Config:
+    #     schema_extra = {
+    #         "example": {
+    #             "result": "success",
+    #             "version": "1.0",
+    #             "license": "Copyright 2026 Pignus. All rights reserved."
+    #         }
+    #     }
 
 
 @_router.get("/ppapi", response_model=PPapiResponse, responses=get_error_response())
