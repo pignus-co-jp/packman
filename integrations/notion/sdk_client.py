@@ -6,20 +6,11 @@ from . import raw
 import notion_client
 
 
-
 def create_sdk_client(key: str) -> Optional[notion_client.Client]:
     try:
         return notion_client.Client(auth=key)
     except Exception:
         return None
-
-
-def make_database_id_from_url(url: str) -> Optional[str]:
-    return None
-
-
-def make_page_id_from_url(url: str) -> Optional[str]:
-    return None
 
 
 def create_search_filter():
@@ -113,5 +104,5 @@ def get_body_only_markdown_by_page_id(sdk_client: notion_client.Client,
     """
     ページIDを親ブロックとして、その配下の本文をMarkdown化して取得
     """
-    return get_body_only_markdown_by_block_id(sdk_client=sdk_client, 
+    return get_body_only_markdown_by_block_id(sdk_client=sdk_client,
                                               block_id=page_id)

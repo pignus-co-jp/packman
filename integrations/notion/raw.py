@@ -1,4 +1,5 @@
-
+import re
+from urllib.parse import urlparse, parse_qs
 
 from typing import List, Optional, Dict
 
@@ -209,3 +210,42 @@ def block_to_markdown(block: dict) -> str:
 
     return md_text
 
+
+def make_database_id_from_url(url: str) -> Optional[str]:
+    """
+    NotionのURLからデータベースIDを抽出する関数
+    """
+    # 32文字の英数字（ヘキサデシマル形式）にマッチするパターン
+    # 通常、v= などのパラメータの直前にある文字列を狙います
+    pattern = r"([a-f0-9]{32})"
+
+    match = re.search(pattern, url)
+
+    if match:
+        return match.group(1)
+
+    return None
+
+
+def make_page_id_from_url(url: str) -> Optional[str]:
+    """
+    NotionのURLからIDを抽出する。
+    ?p= パラメータがある場合はそれを最優先し、ない場合はパスの末尾から抽出する。
+    """
+    parsed_url = urlparse(url)
+
+    # 1. クエリパラメータ 'p' をチェック (最優先)
+    query_params = parse_qs(parsed_url.query)
+    if 'p' in query_params:
+        p_value = query_params['p'][0]
+        # pの中身が32文字のID形式か確認
+        match = re.search(r"([a-f0-9]{32})", p_value)
+        if match:
+            return match.group(1)
+
+    # 2. パラメータに 'p' がない場合は、URLのパス部分から抽出
+    # パス（?より前の部分）から32文字の英数字を探す
+    path_matches = re.findall(r"([a-f0-9]{32})", parsed_url.path)
+    if path_matches:
+        # パスの中に複数ある場合は、一番最後（ページのメインID）を返す
+        return path_matches[-1]
