@@ -57,17 +57,58 @@ def find_page_ids_by_database_id(sdk_client: notion_client.Client,
     return page_ids
 
 
-def get_page_property_by_page_id(sdk_client: notion_client.Client,
-                                 page_id: str) -> Optional[dict]:
+def get_page_retrieve_by_id(sdk_client: notion_client.Client,
+                            page_id: str) -> Optional[dict]:
     try:
         return sdk_client.pages.retrieve(page_id=page_id)
     except Exception:
         return None
 
 
-def get_body_only_markdown_by_block_id(sdk_client: notion_client.Client,
-                                       block_id: str,
-                                       indent: int = 0):
+def get_blocks_as_json(sdk_client: notion_client.Client,
+                       block_id: str) -> list:
+    """
+    指定したIDのブロック配下を再帰的にJSONデータとして全て出力
+    """
+    all_blocks = []
+    cursor = None
+
+    while True:
+        response = sdk_client.blocks.children.list(
+            block_id=block_id, start_cursor=cursor
+        )
+
+        for block in response.get("results", []):
+            # ブロックデータをそのまま追加
+            block_data = dict(block)
+
+            # 子ブロックが存在する場合は再帰的に取得して追加
+            if block.get("has_children"):
+                block_data["children"] = get_blocks_as_json(
+                    sdk_client, block["id"]
+                )
+
+            all_blocks.append(block_data)
+
+        if not response.get("has_more"):
+            break
+        cursor = response.get("next_cursor")
+
+    return all_blocks
+
+
+def get_page_body_by_id(sdk_client: notion_client.Client,
+                        page_id: str) -> str:
+    """
+    ブロックデータをJSON文字列として返す（オプションでファイル保存）
+    """
+    blocks = get_blocks_as_json(sdk_client, page_id)
+    return blocks
+
+
+def get_blocks_as_markdown(sdk_client: notion_client.Client,
+                           block_id: str,
+                           indent: int = 0):
     """
     指定したIDのブロック配下（本文）を再帰的にMarkdown化
     """
@@ -86,7 +127,7 @@ def get_body_only_markdown_by_block_id(sdk_client: notion_client.Client,
 
             # 子ブロック（ネストされたリストやトグル）の処理
             if block.get("has_children"):
-                child_md = get_body_only_markdown_by_block_id(
+                child_md = get_blocks_as_markdown(
                     sdk_client, block["id"], indent + 1)
                 lines.append(child_md)
                 if block.get("type") == "toggle":
@@ -99,10 +140,10 @@ def get_body_only_markdown_by_block_id(sdk_client: notion_client.Client,
     return "\n".join(lines)
 
 
-def get_body_only_markdown_by_page_id(sdk_client: notion_client.Client,
-                                      page_id: str) -> str:
+def get_page_body_markdown_by_id(sdk_client: notion_client.Client,
+                                 page_id: str) -> str:
     """
     ページIDを親ブロックとして、その配下の本文をMarkdown化して取得
     """
-    return get_body_only_markdown_by_block_id(sdk_client=sdk_client,
-                                              block_id=page_id)
+    return get_blocks_as_markdown(sdk_client=sdk_client,
+                                  block_id=page_id)

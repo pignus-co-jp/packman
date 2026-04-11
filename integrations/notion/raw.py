@@ -4,7 +4,7 @@ from urllib.parse import urlparse, parse_qs
 from typing import List, Optional, Dict
 
 
-class DbProperty:
+class Property:
     def __init__(self,
                  name: str,
                  raw: dict):
@@ -111,55 +111,57 @@ class DbProperty:
                 val = raw_val.get(r_type)
                 if val is not None:
                     plain_texts = [str(val)]
+        elif p_type in ["email", "url", "number", "phone_number", "checkbox"]:
+            plain_texts.append(raw_val)
 
         # (中略: formula, unique_id 等)
 
         return [t for t in plain_texts if t]  # 空文字を除去して返す
 
 
-class DbHeader:
+class PropertyHolder:
     def __init__(self,
                  raw: dict):
         # 探索を高速化するために辞書で保持する
-        self._properties_by_name: Dict[str, DbProperty] = {}
-        self._properties_by_id: Dict[str, DbProperty] = {}
+        self._properties_by_name: Dict[str, Property] = {}
+        self._properties_by_id: Dict[str, Property] = {}
 
         if not raw:
             return
 
         for k, v in raw.items():
-            prop = DbProperty(k, v)
+            prop = Property(k, v)
             self._properties_by_name[k] = prop
 
             p_id = prop.get_id()
             if p_id:
                 self._properties_by_id[p_id] = prop
 
-    def get_property_by_name(self, name: str) -> Optional[DbProperty]:
+    def get_property_by_name(self, name: str) -> Optional[Property]:
         return self._properties_by_name.get(name)
 
-    def get_property_by_id(self, id: str) -> Optional[DbProperty]:
+    def get_property_by_id(self, id: str) -> Optional[Property]:
         return self._properties_by_id.get(id)
 
-    def get_all_properties(self) -> List[DbProperty]:
+    def find_all_properties(self) -> List[Property]:
         return list(self._properties_by_name.values())
 
 
-class DbRetrieve:
+class PageRetrieveHolder:
     def __init__(self,
                  raw: dict):
         # raw.get("properties") が None の場合に備え {} をデフォルトに
         properties_raw = raw.get("properties", {}) if raw else {}
-        self._header = DbHeader(properties_raw)
+        self._property_holder = PropertyHolder(properties_raw)
 
-    def get_property_by_name(self, name: str) -> Optional[DbProperty]:
-        return self._header.get_property_by_name(name)
+    def get_property_by_name(self, name: str) -> Optional[Property]:
+        return self._property_holder.get_property_by_name(name)
 
-    def get_property_by_id(self, id: str) -> Optional[DbProperty]:
-        return self._header.get_property_by_id(id)
+    def get_property_by_id(self, id: str) -> Optional[Property]:
+        return self._property_holder.get_property_by_id(id)
 
-    def find_all_properties(self) -> List[DbProperty]:
-        return self._header.get_all_properties()
+    def find_all_properties(self) -> List[Property]:
+        return self._property_holder.find_all_properties()
 
 
 def block_to_markdown(block: dict) -> str:
