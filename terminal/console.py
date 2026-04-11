@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any, Callable
+from typing import List, Optional, Dict, Any, Callable, TypedDict
 import sys
 import time
 import signal
 import shlex
 from .. import log
+import os
 
 
 class CLIArgsError(Exception):
@@ -50,6 +51,24 @@ class CLIArgs:
 
         self._parse(argv[1:])  # プログラム名を除く
 
+    @staticmethod
+    def _looks_like_value(s: str) -> bool:
+        """
+        文字列が値（オプションの引数）として解釈すべきかを判定する。
+        負の数値（例: -1, -3.14）はフラグではなく値として扱う。
+
+        Args:
+            s: 判定する文字列
+
+        Returns:
+            値として解釈すべき場合True
+        """
+        try:
+            float(s)
+            return True
+        except ValueError:
+            return not s.startswith("-")
+
     def _parse(self, args: List[str]) -> None:
         """
         引数をパース
@@ -80,8 +99,8 @@ class CLIArgs:
                     if not key:
                         raise CLIArgsError(f"Invalid option format: {arg}")
 
-                    # 次の引数が値かチェック
-                    if i + 1 < len(args) and not args[i + 1].startswith("-"):
+                    # 次の引数が値かチェック（負の数値も値として扱う）
+                    if i + 1 < len(args) and self._looks_like_value(args[i + 1]):
                         self.options[key] = args[i + 1]
                         i += 1
                     else:
@@ -227,12 +246,18 @@ class ConsoleError(Exception):
     pass
 
 
+# __commands の値の型を明確に定義
+class CommandInfo(TypedDict):
+    handler: Callable
+    description: str
+
+
 class WorkSpace(ABC):
-    def __init__(self,
-                 id: str):
+    def __init__(self, id: str):
         super().__init__()
         self.id = id
-        self.is_destroy = False
+        self.__is_destroy = False
+        self.__system_abort_callback: Optional[Callable] = None
 
     @abstractmethod
     def _onDestroy(self) -> None:
@@ -250,13 +275,26 @@ class WorkSpace(ABC):
     def initialize(self) -> None:
         self._on_initialize()
 
-    def hundle_input_string(self, raw_input: str) -> Optional["WorkSpace"]:
+    def handle_input_string(self, raw_input: str) -> Optional["WorkSpace"]:
         return self._on_input_string(raw_input=raw_input)
 
     def destroy(self) -> None:
-        if self.is_destroy is True:
+        if self.__is_destroy is True:
             return
+        self.__is_destroy = True
         self._onDestroy()
+
+    def is_destroy(self) -> bool:
+        return self.__is_destroy
+
+    def system_abort(self):
+        if not self.is_destroy():
+            self.destroy()
+            if self.__system_abort_callback:
+                self.__system_abort_callback()
+
+    def set_abort_callback(self, system_abort_callback: Callable):
+        self.__system_abort_callback = system_abort_callback
 
 
 class PPConsole(ABC):
@@ -292,19 +330,20 @@ class PPConsole(ABC):
         self.argv = CLIArgs(argv)
 
         self.prompt = prompt
-        self.exit_keyword = exit_keyword
+        self.__exit_keyword = exit_keyword
 
-        self.__workspace = None
+        self.__workspace: Optional[WorkSpace] = None
 
         self.__is_console_mode = self.argv.has_flag(console_flag)
         self.__is_active = True
+        self.__is_destroy = False
         self.__commands: Dict[str, Callable] = {}
-        self._setup_signal_handlers()
+        self._on_setup_signal_handlers()
 
         log.i(
             f"Console initialized (mode: {'interactive' if self.__is_console_mode else 'daemon'})")
 
-    def _setup_signal_handlers(self) -> None:
+    def _on_setup_signal_handlers(self) -> None:
         """シグナルハンドラーを設定"""
         def signal_handler(signum, frame):
             log.i(f"Received signal {signum}")
@@ -342,10 +381,10 @@ class PPConsole(ABC):
             handler: コマンドハンドラー（引数リストを受け取る）
             description: コマンドの説明
         """
-        self.__commands[name] = {
-            "handler": handler,
-            "description": description,
-        }
+        self.__commands[name] = CommandInfo(
+            handler=handler,
+            description=description,
+        )
         log.d(f"Registered command: {name}")
 
     def _process_command(self, raw_input: str) -> bool:
@@ -392,15 +431,20 @@ class PPConsole(ABC):
         そうでない場合はデーモンモードで待機
         """
 
+        def _stoploop():
+            self.__is_active = False
+            pass
         self.register_command(
-            "ppexit",
-            lambda args: self.destroy(),
+            self.__exit_keyword,
+            lambda args: _stoploop(),
             "Exit the console"
         )
 
         self.__workspace = self._on_startup()
         try:
-            self.__workspace.initialize()
+            if self.__workspace:
+                self.__workspace.set_abort_callback(self.abort)
+                self.__workspace.initialize()
         except Exception as ex:
             log.e(ex)
 
@@ -409,6 +453,10 @@ class PPConsole(ABC):
                 if self.__is_console_mode:
                     try:
                         raw_input = input(self.prompt)
+
+                        if self.__workspace:
+                            if self.__workspace.is_destroy():
+                                break
 
                         # 空行はスキップ
                         if not raw_input.strip():
@@ -420,10 +468,11 @@ class PPConsole(ABC):
 
                         # カスタム処理
                         if self.__workspace:
-                            ws = self.__workspace.hundle_input_string(
+                            ws = self.__workspace.handle_input_string(
                                 raw_input=raw_input)
                             if ws:
-                                if ws.id is not self.__workspace.id:
+                                ws.set_abort_callback(self.abort)
+                                if ws.id != self.__workspace.id:
                                     self.__workspace.destroy()
                                     self.__workspace = ws
                                     try:
@@ -435,39 +484,47 @@ class PPConsole(ABC):
 
                     except EOFError:
                         log.i("EOF received")
-                        self.destroy()
                         break
                     except Exception as ex:
                         log.e(f"Console error: {ex}", exc_info=True)
                 else:
                     # デーモンモード
                     print(".", end="", flush=True)
-                    time.sleep(5)
+                    if self.__workspace:
+                        if self.__workspace.is_destroy():
+                            break
+                    time.sleep(.5)
 
         except KeyboardInterrupt:
             log.i("Keyboard interrupt received")
-            self.destroy()
         finally:
             log.i("Console loop ended")
+        self.destroy()
 
     def destroy(self) -> None:
-        """コンソールを終了"""
-        if not self.__is_active:
+        log.i("[PPConsole]", "Request", "destroy")
+        if self.__is_destroy is True:
             return
 
-        log.i("Destroying console...")
-        self.__is_active = False
+        self.__is_destroy = True
+
+        log.i("[PPConsole]", "Start", "destroy")
 
         try:
             if self.__workspace:
                 self.__workspace.destroy()
+                self.__workspace = None
         except Exception as ex:
             log.e(ex)
 
+        """コンソールを終了"""
         try:
             self._onDestroy()
         except Exception as e:
             log.e(f"Error during cleanup: {e}", exc_info=True)
+
+        log.i("[PPConsole]", "End", "destroy")
+        pass
 
     def is_active(self) -> bool:
         """アクティブ状態を取得"""
@@ -534,3 +591,12 @@ class PPConsole(ABC):
                 f"Active: {self.__is_active}, Mode: {'console' if self.__is_console_mode else 'daemon'}"),
             "Show console status"
         )
+
+    def abort(self):
+        self.destroy()
+
+        my_pid = os.getpid()
+
+        # 自身に向けてシグナルを送信
+        print("自分自身に os.kill で送信します...")
+        os.kill(my_pid, signal.SIGINT)

@@ -6,8 +6,6 @@ import requests
 
 from ... import log
 
-from ...config import env
-
 
 def find_ad_ids_by_account_id(token: str,
                               account_id: str,
@@ -328,9 +326,9 @@ def regist_ads(token: str,
     headers["Authorization"] = f"Bearer {token}"
     headers["Content-Type"] = "application/json"
 
-    if ((env.get_env_by_key("REGISTMODE_A") is None) or
-            (str(env.get_env_by_key("REGISTMODE_A")) !=
-             str(env.get_env_by_key("REGISTMODE_B")))
+    if ((os.getenv("PACKMAN_META_ADS_KEYA") is None) or
+            (str(os.getenv("PACKMAN_META_ADS_KEY_A")) !=
+             str(os.getenv("PACKMAN_META_ADS_KEY_B")))
         ):
         log.i("regist_ads", "NoRegistMode", account_id, adsjson)
         return False
