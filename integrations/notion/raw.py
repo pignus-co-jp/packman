@@ -147,7 +147,7 @@ class PropertyHolder:
         return list(self._properties_by_name.values())
 
 
-class PageRetrieveHolder:
+class RetrieveHolder:
     def __init__(self,
                  raw: dict):
         # raw.get("properties") が None の場合に備え {} をデフォルトに
