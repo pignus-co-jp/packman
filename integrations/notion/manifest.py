@@ -4,7 +4,7 @@ from typing import Optional, List
 from packman.integrations import notion
 
 
-def database_propertys_by_id_or_url(id_or_url: str, api_key: Optional[str]) -> List[notion.raw.Property]:
+def database_propertys_by_id_or_url(id_or_url: str, api_key: Optional[str] = None) -> List[notion.raw.Property]:
     if api_key is None:
         api_key = os.getenv("NOTION_API_KEY")
     notion_client = notion.sdk_client.create_sdk_client(key=api_key)
