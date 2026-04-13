@@ -59,3 +59,17 @@ class ValidationErrorResponse(Response):
     #             ]
     #         }
     #     }
+
+
+class RedirectResponse(Response):
+    result: str = Field("redirect", description="リダイレクト要求")
+    status: int = Field(description="リダイレクトステータス")
+    redirect_to: Optional[str] = Field(description="リダイレクト先URL")
+
+    # class Config:
+    #     schema_extra = {
+    #         "example": {
+    #             "result": "redirect",
+    #             "detail": "Not Found"
+    #         }
+    #     }
