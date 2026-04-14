@@ -34,7 +34,7 @@ class Property:
     def get_raw(self) -> dict:
         return self._raw
 
-    def find_plain_text_contents(self) -> List[str]:
+    def list_plain_text_contents(self) -> List[str]:
         # 内部関数を外に出すか、selfを渡さずに済むよう raw全体を渡す
         return self._parse_property_recursive(self._raw)
 
@@ -118,6 +118,9 @@ class Property:
 
         return [t for t in plain_texts if t]  # 空文字を除去して返す
 
+    def to_single_plain_text(self) -> str:
+        return "".join(self.list_plain_text_contents()).strip()
+
 
 class PropertyHolder:
     def __init__(self,
@@ -143,7 +146,7 @@ class PropertyHolder:
     def get_property_by_id(self, id: str) -> Optional[Property]:
         return self._properties_by_id.get(id)
 
-    def find_all_properties(self) -> List[Property]:
+    def list_all_properties(self) -> List[Property]:
         return list(self._properties_by_name.values())
 
 
@@ -160,8 +163,32 @@ class RetrieveHolder:
     def get_property_by_id(self, id: str) -> Optional[Property]:
         return self._property_holder.get_property_by_id(id)
 
-    def find_all_properties(self) -> List[Property]:
-        return self._property_holder.find_all_properties()
+    def list_all_properties(self) -> List[Property]:
+        return self._property_holder.list_all_properties()
+
+    def get_single_plain_text_by_property_by_id(self, id: str) -> str:
+        p = self.get_property_by_id(id)
+        if p:
+            return p.to_single_plain_text()
+        return ""
+
+    def get_single_plain_text_by_property_by_name(self, name: str) -> str:
+        p = self.get_property_by_name(name)
+        if p:
+            return p.to_single_plain_text()
+        return ""
+
+    def list_plain_text_by_property_by_id(self, id: str) -> str:
+        p = self.get_property_by_id(id)
+        if p:
+            return p.list_plain_text_contents()
+        return []
+
+    def list_plain_text_by_property_by_name(self, name: str) -> str:
+        p = self.get_property_by_name(name)
+        if p:
+            return p.list_plain_text_contents()
+        return []
 
 
 def block_to_markdown(block: dict) -> str:
