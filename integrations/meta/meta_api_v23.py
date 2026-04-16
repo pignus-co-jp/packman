@@ -315,6 +315,8 @@ def validateonly_ads(token: str,
         except Exception as ex:
             log.e("validateonly_ads", ex)
 
+    return None
+
 
 def regist_ads(token: str,
                account_id: str,
@@ -346,3 +348,4 @@ def regist_ads(token: str,
             return x.json()
         except Exception as ex:
             log.e("regist_ads", ex)
+    return None
