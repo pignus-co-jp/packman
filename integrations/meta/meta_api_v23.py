@@ -5,7 +5,7 @@ from typing import List, Optional
 import requests
 
 from ... import log
-
+from packman.tracer import dumpper
 
 def find_ad_ids_by_account_id(token: str,
                               account_id: str,
@@ -55,6 +55,11 @@ def find_ad_ids_by_account_id(token: str,
             f"https://graph.facebook.com/v23.0/act_{account_id}/ads?fields=id,name,created_time{_extr_fields_query_param}&limit={limit}",
             headers=headers,
             timeout=60*2)
+        try:
+            dumpper.textdumpper(dumpper=x.headers['x-business-use-case-usage'], filepath=os.path.join("logs", "metaapi", f"usage_{str(int(time.time() * 1000))}.txt"))
+        except Exception as ex:
+            log.e(ex)
+            pass
         return x.json()
     except Exception as ex:
         log.e("find_ad_ids_by_account_id", ex)
@@ -92,6 +97,11 @@ def get_ad_by_ad_id(token: str,
         x = requests.get(url,
                          headers=headers,
                          timeout=60*2)
+        try:
+            dumpper.textdumpper(dumpper=x.headers['x-business-use-case-usage'], filepath=os.path.join("logs", "metaapi", f"usage_{str(int(time.time() * 1000))}.txt"))
+        except Exception as ex:
+            log.e(ex)
+            pass
         return x.json()
     except Exception as ex:
         log.e("get_ad_by_ad_id", ex)
@@ -118,6 +128,11 @@ def get_image_by_name(token: str,
             f"https://graph.facebook.com/v23.0/act_{account_id}/adimages?name={image_name}",
             headers=headers,
             timeout=60*2)
+        try:
+            dumpper.textdumpper(dumpper=x.headers['x-business-use-case-usage'], filepath=os.path.join("logs", "metaapi", f"usage_{str(int(time.time() * 1000))}.txt"))
+        except Exception as ex:
+            log.e(ex)
+            pass
         return x.json()
     except Exception as ex:
         log.e("get_image_by_name", ex)
@@ -149,6 +164,11 @@ def upload_image(token: str,
                     files=files,
                     headers=headers,
                     timeout=60*2)
+                try:
+                    dumpper.textdumpper(dumpper=x.headers['x-business-use-case-usage'], filepath=os.path.join("logs", "metaapi", f"usage_{str(int(time.time() * 1000))}.txt"))
+                except Exception as ex:
+                    log.e(ex)
+                    pass
                 return x.json()
         except Exception as ex:
             log.e("upload_image", ex)
@@ -174,6 +194,11 @@ def get_video_by_name(token: str,
             f"https://graph.facebook.com/v23.0/act_{account_id}/advideos?name={video_name}",
             headers=headers,
             timeout=60*2)
+        try:
+            dumpper.textdumpper(dumpper=x.headers['x-business-use-case-usage'], filepath=os.path.join("logs", "metaapi", f"usage_{str(int(time.time() * 1000))}.txt"))
+        except Exception as ex:
+            log.e(ex)
+            pass
         return x.json()
     except Exception as ex:
         log.e("get_video_by_name", ex)
@@ -199,6 +224,11 @@ def get_video_thumbnails_by_video_id(token: str,
             f"https://graph.facebook.com/v23.0/{video_id}/thumbnails",
             headers=headers,
             timeout=60*2)
+        try:
+            dumpper.textdumpper(dumpper=x.headers['x-business-use-case-usage'], filepath=os.path.join("logs", "metaapi", f"usage_{str(int(time.time() * 1000))}.txt"))
+        except Exception as ex:
+            log.e(ex)
+            pass
         return x.json()
     except Exception as ex:
         log.e("get_video_thumbnails_by_video_id", ex)
@@ -263,6 +293,11 @@ def upload_video(token: str,
                     data=data,
                     headers=headers,
                     timeout=60*2)
+                try:
+                    dumpper.textdumpper(dumpper=x.headers['x-business-use-case-usage'], filepath=os.path.join("logs", "metaapi", f"usage_{str(int(time.time() * 1000))}.txt"))
+                except Exception as ex:
+                    log.e(ex)
+                    pass
                 return x.json()
         except Exception as ex:
             log.e("upload_video", ex)
@@ -311,6 +346,11 @@ def validateonly_ads(token: str,
                               headers=headers,
                               json=request_adsjson,
                               timeout=60*2)
+            try:
+                dumpper.textdumpper(dumpper=x.headers['x-business-use-case-usage'], filepath=os.path.join("logs", "metaapi", f"usage_{str(int(time.time() * 1000))}.txt"))
+            except Exception as ex:
+                log.e(ex)
+                pass
             return x.json()
         except Exception as ex:
             log.e("validateonly_ads", ex)
@@ -345,6 +385,11 @@ def regist_ads(token: str,
                               headers=headers,
                               json=request_adsjson,
                               timeout=60*2)
+            try:
+                dumpper.textdumpper(dumpper=x.headers['x-business-use-case-usage'], filepath=os.path.join("logs", "metaapi", f"usage_{str(int(time.time() * 1000))}.txt"))
+            except Exception as ex:
+                log.e(ex)
+                pass
             return x.json()
         except Exception as ex:
             log.e("regist_ads", ex)
