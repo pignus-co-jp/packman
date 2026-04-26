@@ -1,4 +1,5 @@
 
+from enum import Enum
 
 from typing import List, Optional
 from . import raw
@@ -10,21 +11,27 @@ def create_sdk_client(key: str) -> Optional[notion_client.Client]:
     return notion_client.Client(auth=key)
 
 
-def create_search_filter():
-    return None
-
-
 def find_page_ids_by_database_id(sdk_client: notion_client.Client,
                                  database_id: str,
-                                 search_filter: Optional[dict] = None) -> List[str]:
+                                 search_filter: Optional[dict] = None,
+                                 limit: int = 2
+                                 ) -> List[str]:
     """
-    データベース内の全ページのIDをリストで取得する
+    データベース内の全ページのIDをリストで取得する、
+    フィルタのファクトリは以下：
+    create_search_single_filter
+    create_search_multi_filter
     """
     page_ids = []
 
     cursor = None
 
+    cnt = 0
     while True:
+        cnt = cnt + 1
+        if cnt >= limit:
+            break
+
         # データベースをクエリ（1回につき最大100件）
         # 共通の引数を準備
         query_args = {
@@ -60,6 +67,7 @@ def get_page_retrieve_by_id(sdk_client: notion_client.Client,
 def get_database_retrieve_by_id(sdk_client: notion_client.Client,
                                 database_id: str) -> Optional[dict]:
     return sdk_client.databases.retrieve(database_id=database_id)
+
 
 def get_blocks_as_json(sdk_client: notion_client.Client,
                        block_id: str) -> list:
