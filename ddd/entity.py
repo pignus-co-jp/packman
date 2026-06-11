@@ -1,4 +1,5 @@
 from abc import ABC
+import uuid
 
 class Entity(ABC):
     def __init__(self, id: str):
@@ -18,3 +19,8 @@ class Entity(ABC):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(id={self._id!r})"
+
+
+    @classmethod
+    def next_id(cls) -> str:
+        return str(uuid.uuid4())
