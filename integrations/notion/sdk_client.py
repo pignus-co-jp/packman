@@ -14,6 +14,7 @@ def create_sdk_client(key: str) -> Optional[notion_client.Client]:
 def find_page_ids_by_database_id(sdk_client: notion_client.Client,
                                  database_id: str,
                                  search_filter: Optional[dict] = None,
+                                 sorts: Optional[List[dict]] = None,
                                  limit: int = 2
                                  ) -> List[str]:
     """
@@ -28,10 +29,6 @@ def find_page_ids_by_database_id(sdk_client: notion_client.Client,
 
     cnt = 0
     while True:
-        cnt = cnt + 1
-        if cnt >= limit:
-            break
-
         # データベースをクエリ（1回につき最大100件）
         # 共通の引数を準備
         query_args = {
@@ -43,12 +40,20 @@ def find_page_ids_by_database_id(sdk_client: notion_client.Client,
         if search_filter is not None:
             query_args["filter"] = search_filter
 
+        # sortsが指定されている場合のみ追加
+        if sorts is not None:
+            query_args["sorts"] = sorts
+
         # 辞書を展開して渡す
         response = sdk_client.databases.query(**query_args)
 
         # 結果からページIDを抽出
         for page in response.get("results", []):
             page_ids.append(page.get("id"))
+
+        cnt = cnt + 1
+        if cnt >= limit:
+            break
 
         # 次のページがあるか確認
         if not response.get("has_more"):

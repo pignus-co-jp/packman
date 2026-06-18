@@ -98,3 +98,30 @@ class CompoundFilter:
     @staticmethod
     def OR(*filters: dict):
         return {"or": list(filters)}
+
+
+class SortBuilder:
+    """
+    timestampは機能しない事があるので非推奨
+    """
+
+    @staticmethod
+    def property(property_name: str, is_asc: bool = True):
+        return {
+            "property": property_name,
+            "direction": "ascending" if is_asc else "descending"
+        }
+
+    # @staticmethod
+    # def created_time(is_asc: bool = True):
+    #     return {
+    #         "timestamp": "created_time",
+    #         "direction": "ascending" if is_asc else "descending"
+    #     }
+
+    # @staticmethod
+    # def last_edited_time(is_asc: bool = True):
+    #     return {
+    #         "timestamp": "last_edited_time",
+    #         "direction": "ascending" if is_asc else "descending"
+    #     }
