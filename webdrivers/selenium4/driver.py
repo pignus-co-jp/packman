@@ -11,7 +11,7 @@
 from typing import Optional
 from selenium import webdriver
 from . import driveroption
-from .. import log
+from ... import log
 
 
 def create(driver_option: Optional[driveroption.DriverOption] = None) -> Optional[webdriver.Chrome]:

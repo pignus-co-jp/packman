@@ -9,7 +9,7 @@ from . import browser
 from . import elements
 from . import waitfor
 
-from .. import log
+from ... import log
 
 from selenium import webdriver
 

@@ -2,7 +2,7 @@
 
 from typing import Optional
 from selenium import webdriver
-from .. import log
+from ... import log
 
 
 def size(chromedriver: webdriver.Chrome, w: int = 1280, h: int = 720):
